@@ -89,3 +89,33 @@ Curso de NestJS: Persistencia de Datos con MongoDB
   docker-compose ps
   docker-compose down
   ```
+
+## Exploración de la base de datos con Mongo Compass
+  Al trabajar con un motor de base de datos, siempre es muy práctico disponer de una **interfaz gráfica para visualizar nuestros datos** y ejecutar consultas más cómodamente.
+
+  ### UI para MongoDB
+  [Mongo Compass](https://www.mongodb.com/try/download/compass  ) es el software por excelencia para la visualización de bases de datos MongoDB, oficial y desarrollado por Mongo. Te permitirá conectarte a cualquier base de datos, sea local o remota, para visualizar las colecciones y los documentos en tu base.
+
+  **String de conexión a base de datos**
+
+  MongoDB utiliza una sintaxis especial para establecer la conexión a una base de datos. Utiliza un string con la siguiente estructura:
+  ```bash
+  mongodb://<USER>:<PASS>@<HOST>:<PORT>/<DBNAME>?authSource=admin
+  ```
+  Debe completar los datos del usuario, del host y puerto, y el nombre de la base de datos, seguido de algunos parámetros opcionales de configuración. Si la información es correcta, se establecerá la conexión con la base de datos MongoDB que puedes estar corriendo en Docker o en un servidor remoto.
+
+  **Por ejemplo:**
+
+  ```bash
+  mongodb://mongo:secret@localhost:27017/nestjs_mongo?authSource=admin
+  ```
+  Recuerda que, para conectarte a tu base de datos MongoDB que está corriendo en Docker, las variables de entorno que has configurado en el docker.compose.yml son los mismos datos que tienes que utilizar para construir el string de conexión.
+  ```yaml
+  # docker-compose.yml
+  ...
+  environment:
+    - MONGO_INITDB_DATABASE=nestjs_mongo
+    - MONGO_INITDB_ROOT_USERNAME=mongo
+    - MONGO_INITDB_ROOT_PASSWORD=secret
+  ```
+  Mongo Compass será tu mejor aliado a la hora de diseñar y usar bases de datos MongoDB.
