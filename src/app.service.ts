@@ -9,7 +9,7 @@ export class AppService {
   constructor(
     // @Inject('API_KEY') private apiKey: string,
     @Inject('TASKS') private tasks: any[],
-    @Inject('MONGO') private database: Db[],
+    @Inject('MONGO') private database: Db,
     // private config: ConfigService,
     @Inject(config.KEY) private configService: ConfigType<typeof config>,
   ) {}
@@ -19,6 +19,7 @@ export class AppService {
     return `Hello World! ${apiKey} ${name}`;
   }
   getTasks() {
-    //
+    const tasksCollection = this.database.collection('tasks');
+    return tasksCollection.find().toArray();
   }
 }
