@@ -119,3 +119,37 @@ Curso de NestJS: Persistencia de Datos con MongoDB
     - MONGO_INITDB_ROOT_PASSWORD=secret
   ```
   Mongo Compass será tu mejor aliado a la hora de diseñar y usar bases de datos MongoDB.
+
+## Instalando y conectando MongoDB Driver
+  Ya sabes como hacer la configuración de Docker, Ahora, para conectar NestJS y MongoDB es necesario realizar la instalación de algunas dependencias desde NPM que nos ayudarán a lograrlo.
+
+  ### Cómo instalar drivers MongoDB
+  Con el comando <code>npm install mongodb --save</code>[instalarás el driver oficial para trabajar con NodeJS y MongoDB](https://www.npmjs.com/package/mongodb). Esta dependencia puedes utilizarla siempre que quieras, ya sea que estés trabajando con NestJS o no.
+
+  **NOTA:** 
+  
+  Adicional a la instalación del driver, al trabajar con TypeScript es necesario instalar el tipado de la dependencia con el comando <code>npm i @types/mongodb --save-dev</code> para que nos ayude a trabajar con el driver y evitar errores.
+
+  Siempre usa dependencias oficiales cuando se trata de conexiones a bases de datos. Posterior a eso, podrás instalar otras dependencias que te ayudarán a mapear los datos, pero siempre se apoyan en el driver principal para establecer la conexión y realizar las consultas.
+
+  ### Código de ejemplo para instalación de MongoDB driver
+  ```bash
+  npm i mongodb --save
+  npm i @types/mongodb --save-dev
+  ```
+  ```typescript
+  # src/app.module.ts
+  import { MongoClient } from 'mongodb';
+
+  const uri = 'mongodb://root:root@localhost:27017/?authSource=admin&readPreference=primary';
+
+  const client = new MongoClient(uri);
+  async function run() {
+    await client.connect();
+    const database = client.db('platzi-store');
+    const taskCollection = database.collection('tasks');
+    const tasks = await taskCollection.find().toArray();
+    console.log(tasks);
+  }
+  run();
+  ```
