@@ -10,19 +10,6 @@ import { ConfigModule } from '@nestjs/config';
 import { enviroments } from './enviroments';
 import config from './config';
 import * as Joi from 'joi';
-import { MongoClient } from 'mongodb';
-
-const uri =
-  'mongodb://root:root@localhost:27017/?authMechanism=DEFAULT&authSource=admin';
-const client = new MongoClient(uri);
-async function run() {
-  await client.connect();
-  const database = client.db('cnestjs-mongo');
-  const taskCollection = database.collection('tasks');
-  const tasks = await taskCollection.find().toArray();
-  console.log(tasks);
-}
-run();
 
 @Module({
   imports: [
