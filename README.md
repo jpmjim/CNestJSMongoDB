@@ -501,3 +501,112 @@ Curso de NestJS: Persistencia de Datos con MongoDB
   })
   export class DatabaseModule {}
   ```
+
+## Implementando Mongoose en Módulos
+  Además de realizar la conexión a la base de datos, Mongoose permite el mapeo de información para estandarizar su estructura en cada colección de MongoDB.
+
+  - [Mongoose SchemaTypes](https://mongoosejs.com/docs/schematypes.html#)JS
+  - [NestJS Mongoose](https://docs.nestjs.com/techniques/mongodb)
+
+  ### Creando entidades con Mongoose
+  Crear entidades para darle forma a tus datos es tarea simple gracias a Mongoose.
+  
+  **Paso 1: creación de la entidad y sus propiedades**
+
+  Suponiendo que necesitas una colección en Mongo para almacenar productos, comienza creando un archivo llamado <code>product.entity.ts</code> en el módulo de productos de tu aplicación.
+  ```typescript
+  // modules/products/product.entity.ts
+  import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+  import { Document } from 'mongoose';
+
+  @Schema()
+  export class Product extends Document {
+    @Prop({ required: true })
+    name: string;
+
+    @Prop()
+    description: string;
+
+    @Prop({ type: Number })
+    price: number;
+
+    @Prop({ type: Number })
+    stock: number;
+
+    @Prop()
+    image: string;
+  }
+
+  export const ProductSchema = SchemaFactory.createForClass(Product);
+  ```
+  Observa el decorador <code>@Prop()</code> para mapear cada atributo de la clase Product que extiende de Document e indicarle a Mongoose que se trata de una propiedad del documento. Exportando ProductSchema que, gracias a SchemaFactory que es el responsable de crear y realizar el mapeo de datos, podrás realizar las posteriores consultas desde los servicios.
+
+  **Paso 2: importación de la entidad**
+
+  Ahora solo tienes que importar la entidad en el módulo al que pertenece de la siguiente manera:
+  ```typescript
+  // modules/products/products.module.ts
+  import { MongooseModule } from '@nestjs/mongoose';
+  import { Product, ProductSchema } from './entities/product.entity';
+
+  @Module({
+    imports: [
+      MongooseModule.forFeature([
+        {
+          name: Product.name,
+          schema: ProductSchema,
+        },
+      ])
+    ]
+  })
+  export class ProductsModule {}
+  ```
+  Importa **MongooseModule** y tienes que asignarle un nombre a la colección e inyectarle el schema que utilizará.
+
+  De esta forma, estarás creando la colección <code>products</code> en tu base de datos MongoDB y ya tienes mapeada en tu aplicación la estructura de cada documento que contendrá para evitar errores.
+
+  ### Código de ejemplo para implementar Mongoose
+  ```typescript
+  // src/products/entities/product.entity.ts
+  import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+  import { Document } from 'mongoose';
+
+  @Schema()
+  export class Product extends Document {
+    @Prop({ required: true })
+    name: string;
+
+    @Prop()
+    description: string;
+
+    @Prop({ type: Number })
+    price: number;
+
+    @Prop({ type: Number })
+    stock: number;
+
+    @Prop()
+    image: string;
+  }
+
+  export const ProductSchema = SchemaFactory.createForClass(Product);
+  ```
+  ```typescript
+  // src/products/products.module.ts
+  ...
+  import { MongooseModule } from '@nestjs/mongoose';
+  import { Product, ProductSchema } from './entities/product.entity';
+
+  @Module({
+    imports: [
+      MongooseModule.forFeature([
+        {
+          name: Product.name,
+          schema: ProductSchema,
+        },
+      ]),
+    ],
+    ...
+  })
+  export class ProductsModule {}
+  ```
