@@ -889,3 +889,81 @@ Curso de NestJS: Persistencia de Datos con MongoDB
   export class UpdateProductDto extends PartialType(CreateProductDto) {}
   ```
 
+## Pipe para mongoid
+  En ocasiones es necesario validar nuestros propios datos de entrada. Cuando esos datos sean utilizados para realizar consultas a una base de datos, es recomendable estar prevenido por posibles ataques y validarlos manualmente.
+
+  ### Cómo validar ID de MongoDB
+  Los documentos que se crean en una base de datos MongoDB, por defecto, utilizan una propiedad llamada <code>_id</code>, o también llamado ObjectID, que representa el ID principal de cada documento. El mismo tiene un formato particular de 12 o 24 caracteres que podemos validar para asegurar que, el dato que el front-end nos envía, se trata efectivamente de un Mongo ID.
+
+  **Paso 1: creamos el Pipe de NestJS**
+
+  Crearemos un custom pipe con el comando <code>nest g pi mongoId</code> para validar el Mongo ID. El mismo contendrá la lógica del validador.
+  ```typescript
+  import { ArgumentMetadata, Injectable, PipeTransform, BadRequestException } from '@nestjs/common';
+  import { isMongoId } from 'class-validator';
+
+  @Injectable()
+  export class MongoIdPipe implements PipeTransform {
+    transform(value: string, metadata: ArgumentMetadata) {
+      if (!isMongoId(value)) {
+        throw new BadRequestException(`${value} is not a mongoId`);
+      }
+      return value;
+    }
+  }
+  ```
+  Afortunadamente, la dependencia <code>class-validator</code> nos ayudará a validar el formato del string de entrada para verificar si posee la forma de un Mongo ID.
+
+  **Paso 2: implementar el validador**
+
+  Implementar un Pipe en NestJS es muy sencillo, basta con pasarlo como parámetro al decorador para que el mismo se ocupe de validar el dato de entrada.
+  ```typescript
+  import { MongoIdPipe } from './mongo-id.pipe';
+
+  export class ProductsController {
+    
+    @Get(':productId')
+    getOne(@Param('productId', MongoIdPipe) productId: string) {
+      return this.productsService.findOne(productId);
+    }
+  }
+  ```
+  Recuerda prestar atención tanto al tipado de datos para evitar errores como la validación de los mismos para mejorar la seguridad de tu aplicación. Las aplicaciones profesionales deben desarrollarse con las mejores prácticas posibles.
+
+  ### Código de ejemplo de pipe para mongoid
+  ```bash
+  nest g pi common/mongoId
+  ```
+  ```typescript
+  // src/common/mongo-id.pipe.ts
+  import {
+    ArgumentMetadata,
+    Injectable,
+    PipeTransform,
+    BadRequestException,
+  } from '@nestjs/common';
+  import { isMongoId } from 'class-validator';
+
+  @Injectable()
+  export class MongoIdPipe implements PipeTransform { // 👈 new pipe
+    transform(value: string, metadata: ArgumentMetadata) {
+      if (!isMongoId(value)) {
+        throw new BadRequestException(`${value} is not a mongoId`);
+      }
+      return value;
+    }
+  }
+  ```
+  ```typescript
+  // src/products/controllers/products.controller.ts
+  import { MongoIdPipe } from './../../common/mongo-id.pipe'; // 👈 import
+  ...
+  export class ProductsController {
+    
+    @Get(':productId')
+    getOne(@Param('productId', MongoIdPipe) productId: string) {  // 👈 use MongoIdPipe
+      return this.productsService.findOne(productId);
+    }
+  }
+  ```
+  
