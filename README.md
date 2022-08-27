@@ -1257,3 +1257,117 @@ Curso de NestJS: Persistencia de Datos con MongoDB
   ```
 
   ![](https://www.mongodb.com/docs/manual/images/index-for-sort.bakedsvg.svg)
+
+
+## Relaciones uno a uno embebidas
+  MongoDB es una base de datos No Relacional. Aun así, requerimos la posibilidad de **crear relaciones entre documentos** de diferentes colecciones y es posible hacerlo.
+
+  ### Documento dentro de otro documento
+  La relación más sencilla y más utilizada es guardando un documento dentro de otro, formando una relación uno a uno embebida.
+  ```json
+  {
+    "name": "Producto Uno",
+    "category": {
+      "name": "Category",
+      "image": "..."
+    }
+  }
+  ```
+
+  ### Implementación relación uno a uno
+  Implementar esta lógica con Mongoose y NestJS es muy sencillo.
+
+  **Paso 1: preparar el esquema**
+
+  Agrega la propiedad en tu esquema que contendrá el documento embebido.
+  ```typescript
+  // products/product.entity.ts
+  import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
+
+  export class Product extends Document {
+
+    @Prop(
+      raw({
+        name: { type: String },
+        image: { type: String },
+      })
+    )
+    category: Record<string, any>;
+  }
+  ```
+  El decorador <code>@Prop()</code> recibe un <code>raw()</code> con la estructura del objeto que estará dentro del objeto principal. La relación es resuelta gracias al tipado [Record](https://stackoverflow.com/questions/51936369/what-is-the-record-type-in-typescript) propio de TypeScript.
+
+  **Paso 2: validar sub documento**
+
+  El DTO será el encargado de validar la estructura de este sub documento.
+  ```typescript
+  // products/dto/category.dto.ts
+  import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
+
+  export class CreateCategoryDto {
+
+    @IsString()
+    @IsNotEmpty()
+    readonly name: string;
+    
+    @IsUrl()
+    @IsNotEmpty()
+    readonly image: string;
+  }
+  ```
+  Prepara el DTO para la creación de la categoría con los campos que le corresponde a la misma que estarán embebidos dentro del documento principal.
+  ```typescript
+  // products/products.dto.ts
+  import { ValidateNested } from 'class-validator';
+  import { CreateCategoryDto } from './category.dtos';
+
+  export class CreateProductDto {
+
+    @IsNotEmpty()
+    @ValidateNested()
+    @ApiProperty()
+    readonly category: CreateCategoryDto;
+  }
+  ```
+  Importa el DTO de la categoría y utilízalo como propiedad para el DTO de creación de productos. Agrégale el decorador <code>@ValidateNested()</code> para que NestJS haga la validación de la estructura correspondiente del objeto dentro.
+
+  De esta sencilla manera, puedes crear relaciones uno a una, o guardar un objeto dentro de otro en MongoDB a la vez que válidas la estructura del mismo.
+
+  ### Código de ejemplo para relaciones uno a uno embebidas
+  ```typescript
+  // src/products/entities/product.entity.ts
+  import { Prop, Schema, SchemaFactory, raw } from '@nestjs/mongoose';
+  export class Product extends Document {
+    ...
+    @Prop(
+      raw({
+        name: { type: String },
+        image: { type: String },
+      }),
+    )
+    category: Record<string, any>; // 👈 new field
+  }
+  ```
+  ```typescript
+  // src/products/dtos/category.dtos.ts
+  import { IsString, IsNotEmpty, IsUrl } from 'class-validator';
+  export class CreateCategoryDto {
+    ...
+    @IsUrl()
+    @IsNotEmpty()
+    readonly image: string; // 👈 new field
+  }
+  ```
+  ```typescript
+  // src/products/dtos/products.dtos.ts
+  import {
+    ValidateNested, // 👈 new decorator
+  } from 'class-validator';
+  import { CreateCategoryDto } from './category.dtos';  // 👈
+  export class CreateProductDto {
+    @IsNotEmpty()
+    @ValidateNested()
+    @ApiProperty()
+    readonly category: CreateCategoryDto; // 👈 new field
+  }
+  ```
