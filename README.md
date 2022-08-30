@@ -1525,3 +1525,86 @@ Curso de NestJS: Persistencia de Datos con MongoDB
     }
   }
   ```
+
+## Relaciones uno a muchos embebidas
+  Un tipo de relación entre documentos en MongoDB es el “uno a muchos” de forma embebida. Así como puedes guardar un objeto dentro de otro, puedes **guardar un array de objetos dentro de un objeto principal**.
+
+  ### Array de documentos dentro de un objeto
+  Para lograr este tipo de relación, hazlo de la siguiente manera:
+
+  **Paso 1: preparación del esquema**
+
+  Agrega este nuevo tipo de relación en el esquema de tu colección de Mongo.
+  ```typescript
+  // users/customer.entity.ts
+  import { Document, Types } from 'mongoose';
+
+  export class Customer extends Document {
+    @Prop({
+      type: [{
+        name: { type: String },
+        color: { type: String }
+      }],
+    })
+    skills: Types.Array<Record<string, any>>;
+  }
+  ```
+  El decorador <code>@Prop()</code> recibe una propiedad <code>type</code> que es un array con un ejemplo de la estructura de datos que tendrá cada sub documento.
+
+  **Paso 2: preparación del DTO**
+
+  Ahora solo prepara el DTO para recibir este nuevo campo:
+  ```typescript
+  // users/customer.dto.ts
+  import { IsNotEmpty, IsArray } from 'class-validator';
+
+  export class Skills {  // Sub clase para tipar los datos
+    @IsNotEmpty()
+    name: string;
+    
+    @IsNotEmpty()
+    color: string;
+  }
+
+  export class CreateCustomerDto {
+    @ValidateNested()
+    @Type(() => Skills)
+    readonly skills: Skills[];
+  }
+  ```
+  Creamos una clase auxiliar denominada <code>Skills</code> que utilizaremos para tipar los datos y el decorador <code>@ValidateNested()</code> que hará la validación de forma recursiva, objeto por objeto dentro del array.
+
+  De esta manera, ya puedes guardar todo un array de objetos, dentro de un documento principal. Ten en cuenta que cada documento de MongoDB tiene un máximo de tamaño de **16MB**. Considera esto a la hora de diseñar tu base de datos.
+
+  ### Código de ejemplo para relaciones uno a muchos embebidas
+  ```typescript
+  // src/users/entities/customer.entity.ts
+  import { Document, Types } from 'mongoose';
+
+  export class Customer extends Document {
+    ...
+    @Prop({
+      type: [{ name: { type: String }, color: { type: String } }],
+    })
+    skills: Types.Array<Record<string, any>>; // 👈 field
+  }
+  ```
+  ```typescript
+  // src/users/dtos/customer.dto.ts
+  import {
+    IsString,
+    IsNotEmpty,
+    IsPhoneNumber,
+    IsArray, // 👈 new decorator
+    ValidateNested,  // 👈 new decorator
+  } from 'class-validator';
+  import { PartialType } from '@nestjs/swagger';
+
+  export class CreateCustomerDto {
+    ...
+    @IsArray()
+    @IsNotEmpty()
+    readonly skills: any; // 👈 new field
+  }
+  ```
+  
