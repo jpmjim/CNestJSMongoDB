@@ -1829,3 +1829,111 @@ Curso de NestJS: Persistencia de Datos con MongoDB
     }
   }
   ```
+
+## Manipulación de arrays en MongoDB
+  Los esquemas que contienen propiedades tipo Array deben manipularse de una forma especial. Haciendo los típicos **push/pull** para **agregar/quitar** elementos, pero considerando la asincronía y que estos arrays se guardan en una base de datos.
+
+  ### Agregar y quitar elementos en un array
+  Veamos cómo es posible agregar/quitar elementos de un array que forma parte de un documento en MongoDB:
+  ```typescript
+  // users/services/orders.service.ts
+  export class OrdersService {
+
+    async addProducts(id: string, productsIds: string[]) { 
+      const order = await this.orderModel.findById(id);
+      productsIds.forEach((pId) => order.products.push(pId));
+      return order.save();
+    }
+
+    async removeProduct(id: string, productId: string) {
+      const order = await this.orderModel.findById(id);
+      order.products.pull(productId);
+      return order.save();
+    }
+  }
+  ```
+  La función <code>findById()</code> devolverá la referencia del documento encontrado a través de su ID. Gracias a esto, puedes ejecutar otras acciones sobre ese mismo documento para agregar elementos a un array con <code>push()</code> o removerlos con <code>pull()</code>. Finalmente, la función <code>save()</code> actualizará en la base de datos el documento completo.
+
+  Del lado del controlador, haz una simple llamada a estas funciones que se encargarán de la manipulación de, en este caso, el array de productos.
+  ```typescript
+  // users/orders.controller.ts
+  import { CreateOrderDto, UpdateOrderDto, AddProductsToOrderDto } from '../dtos/order.dto';
+
+  @Controller('orders')
+  export class OrdersController {
+
+    @Put(':id/products')
+    addProducts(@Param('id') id: string, @Body() payload: AddProductsToOrderDto) {
+      return this.ordersService.addProducts(id, payload.productsIds);
+    }
+
+    @Delete(':id/product/:productId')
+    removeProduct(@Param('id') id: string, @Param('productId') productId: string) {
+      return this.ordersService.removeProduct(id, productId);
+    }
+  }
+  ```
+  Ten en cuenta que este tipo de operaciones son asíncronas, dependiendo de cómo armes tu controlador y el servicio encargado de realizar las modificaciones en la base de datos.
+
+  ### Operadores especiales de MongoDB
+  Si trabajas directamente con MongoDB, tienes que conocer los operadores que implementa para la manipulación de arrays. Estos son:
+
+  - [$addToSet](https://www.mongodb.com/docs/manual/reference/operator/update/addToSet/) para agregar items en un array
+  - [$pull](https://www.mongodb.com/docs/manual/reference/operator/update/pull/) para eliminar items en un array
+  - [$pullAll](https://www.mongodb.com/docs/manual/reference/operator/update/pullAll/) para eliminar todos los items en un array
+
+  De esta manera, tu mismo puedes crear las consultas a tu base de datos necesarias para manipular un array dentro de un documento, sin necesidad de que herramientas como Mongoose implementen una capa de abstracción que facilite la tarea.
+  ```typescript
+  // src/users/services/orders.service.ts
+  export class OrdersService {
+    ...
+    async removeProduct(id: string, productId: string) { // 👈 
+      const order = await this.orderModel.findById(id);
+      order.products.pull(productId);
+      return order.save();
+    }
+
+    async addProducts(id: string, productsIds: string[]) {  // 👈 
+      const order = await this.orderModel.findById(id);
+      productsIds.forEach((pId) => order.products.push(pId));
+      return order.save();
+    }
+  }
+  ```
+  ```typescript
+  // src/users/dtos/order.dto.ts
+  ...
+  export class AddProductsToOrderDto {
+    @IsArray()
+    @IsNotEmpty()
+    readonly productsIds: string[];
+  }
+  ```
+  ```typescript
+  // src/users/controllers/orders.controller.ts
+  import {
+    CreateOrderDto,
+    UpdateOrderDto,
+    AddProductsToOrderDto,
+  } from '../dtos/order.dto';
+
+  @Controller('orders')
+  export class OrdersController {
+
+    @Put(':id/products') // 👈 add product
+    addProducts(
+      @Param('id') id: string,
+      @Body() payload: AddProductsToOrderDto,
+    ) {
+      return this.ordersService.addProducts(id, payload.productsIds);
+    }
+
+    @Delete(':id/product/:productId') // 👈 delete product
+    removeProduct(
+      @Param('id') id: string,
+      @Param('productId') productId: string,
+    ) {
+      return this.ordersService.removeProduct(id, productId);
+    }
+  }
+  ```
