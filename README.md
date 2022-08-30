@@ -1937,3 +1937,19 @@ Curso de NestJS: Persistencia de Datos con MongoDB
     }
   }
   ```
+
+## Continúa con el Curso de NestJS: Autenticación con Passport y JWT
+  Temas aprendidos durante el curso
+
+  - Docker y MongoDB
+  - Instalación Mongo Compass
+  - Drivers MongoDB para NodeJS
+  - Tipos de conexiones MongoDB y NestJS
+  - Implementación de Mongoose
+  - CRUD NestJS y MongoDB
+  - Pipes validación de Mongo ID
+  - Indexadores en MongoDB
+  - Paginación y filtros en MongoDB
+  - Relaciones “uno a uno” embebidas y referenciadas
+  - Relaciones “uno a muchos” embebidas y referenciadas
+  - Manipulación de arrays en MongoDB
