@@ -1607,4 +1607,104 @@ Curso de NestJS: Persistencia de Datos con MongoDB
     readonly skills: any; // 👈 new field
   }
   ```
-  
+
+## Cómo tipar relaciones uno a muchos embebidas
+  En las relaciones embebidas usamos las siguientes dos formas:
+
+  **Para relaciones 1:1  embebidas:**
+
+  ```typescript
+  @Prop(
+    raw({
+      name: { type: String },
+      image: { type: String },
+    }),
+  )
+  category: Record<String, Any>;
+  ```
+
+  **Para relaciones 1:N  embebidas:**
+
+  ```typescript
+  @Prop({
+    type: [{ name: { type: String }, color: { type: String } }],
+  })
+  skills: Types.Array<Record<String, Any>>; 
+  ```
+  Sin embargo en los dos usamos any lo cual hace que no tengamos un tipado en estos documentos embebidos, por eso vamos a ver otra forma de lograrlo.
+
+  ### La solución
+  Lo primero es que vamos a crear un esquema para ese documento embebido, de esta manera:
+  ```typescript
+  // src/products/entities/sub-doc.entity.ts
+  import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+
+  @Schema()
+  export class SubDoc {
+    @Prop()
+    name: String;
+
+    @Prop()
+    description: String;
+  }
+
+  export const SubDocSchema = SchemaFactory.createForClass(SubDoc);
+  ```
+  Con su respectivo DTO:
+  ```typescript
+  // src/products/dtos/sub-doc.dto.ts
+  import { IsString, IsNotEmpty } from 'class-validator';
+  import { PartialType } from '@nestjs/swagger';
+
+  export class CreateSubDocDto {
+    @IsString()
+    @IsNotEmpty()
+    readonly name: String;
+
+    @IsString()
+    @IsNotEmpty()
+    readonly description: String;
+  }
+
+  export class UpdateSubDocDto extends PartialType(CreateSubDocDto) {}
+  ```
+  Luego importamos este SubDoc dentro de la entidad que queramos que maneje la relación, así:
+  ```typescript
+  // src/products/entities/product.entity.ts
+  import { SubDoc, SubDocSchema } from './sub-doc.entity'; // 👈 import
+  ...
+  export class Product extends Document {
+    ...
+    
+    @Prop({ type: SubDocSchema })
+    subDoc: SubDoc;  // 👈 new field (1:1)
+
+    @Prop({ type: [SubDocSchema] })
+    subDocs: Types.Array<SubDoc>;  // 👈 new field (1:N)
+  }
+  ...
+  ```
+  Debes tener en cuenta que este SubDoc no va a estar declarado en el módulo, ya que es un documento embebido y no una colección.
+
+  Con esto ya tienes el objeto embebido con tipado y además lo puedes incluir en tus DTOS para una validación más poderosa, de la siguiente manera:
+  ```typescript
+  // src/products/dtos/products.dtos.ts
+  import { ..., IsArray } from 'class-validator';
+  import { Type } from 'class-transformer'; // 👈 transform
+  import { CreateSubDocDto } from './sub-doc.dto'; // 👈 import
+
+  export class CreateProductDto {
+    ...
+    @IsNotEmpty()
+    @ValidateNested()
+    readonly subDoc: CreateSubDocDto;  // 👈 1:1
+
+    @IsNotEmpty()
+    @IsArray()
+    @ValidateNested({ each: true })
+    @Type(() => CreateSubDocDto)
+    readonly subDocs: CreateSubDocDto[];  // 👈 1:N
+  }
+  ```
+  Si haces un POST te debería resultar algo así:
+  ![](https://i.imgur.com/Cvb6h0O.png)
